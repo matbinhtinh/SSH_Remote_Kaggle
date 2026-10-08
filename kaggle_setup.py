@@ -50,7 +50,11 @@ def _port_open(port, host="127.0.0.1", timeout=2.0):
 
 
 def get_secret(*names, default=""):
-    """First non-empty value among Kaggle Secrets / environment variables `names`."""
+    """
+    First non-empty value among Kaggle Secrets / environment variables `names`.
+    Values are stripped, so a placeholder secret such as " " (Kaggle does not accept
+    empty secrets) counts as unset.
+    """
     client = None
     try:
         from kaggle_secrets import UserSecretsClient
@@ -58,11 +62,12 @@ def get_secret(*names, default=""):
     except Exception:
         pass
     for name in names:
-        if os.environ.get(name):
-            return os.environ[name]
+        value = (os.environ.get(name) or "").strip()
+        if value:
+            return value
         if client is not None:
             try:
-                value = client.get_secret(name)
+                value = (client.get_secret(name) or "").strip()
                 if value:
                     return value
             except Exception:
